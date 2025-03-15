@@ -43,7 +43,6 @@ class TestAccountService(TestCase):
         """Runs before each test"""
         db.session.query(Account).delete()  # clean up the last tests
         db.session.commit()
-
         self.client = app.test_client()
 
     def tearDown(self):
@@ -53,7 +52,6 @@ class TestAccountService(TestCase):
     ######################################################################
     #  H E L P E R   M E T H O D S
     ######################################################################
-
     def _create_accounts(self, count):
         """Factory method to create accounts in bulk"""
         accounts = []
@@ -73,7 +71,6 @@ class TestAccountService(TestCase):
     ######################################################################
     #  A C C O U N T   T E S T   C A S E S
     ######################################################################
-
     def test_index(self):
         """It should get 200_OK from the Home Page"""
         response = self.client.get("/")
@@ -123,4 +120,29 @@ class TestAccountService(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
 
-    # ADD YOUR TEST CASES HERE ...
+    def test_read_an_account(self):
+      """It should Read a single Account"""
+      # Create a test account first
+      account = self._create_accounts(1)[0]  # ✅ Correct indentation
+      # Make a GET request to read the account
+      resp = self.client.get(
+            f"{BASE_URL}/{account.id}", content_type="application/json"
+        )
+      # Assert that the response status is HTTP_200_OK
+      self.assertEqual(resp.status_code, status.HTTP_200_OK)
+          
+      # Get JSON response data
+      data = resp.get_json()
+      # Verify the returned data matches the created account
+      self.assertEqual(data["name"], account.name)
+      self.assertEqual(data["email"], account.email)
+      self.assertEqual(data["address"], account.address)
+      self.assertEqual(data["phone_number"], account.phone_number)
+
+    def test_get_account_list(self):
+        """It should Get a list of Accounts"""
+        self._create_accounts(5)  # Create 5 test accounts
+        resp = self.client.get(BASE_URL)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        data = resp.get_json()
+        self.assertEqual(len(data), 5)  # Check that 5 accounts are returned
