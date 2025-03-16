@@ -1,40 +1,57 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: accounts
   labels:
     app: accounts
-  name: accounts
 spec:
-  replicas: 3
+  replicas: 3  # Ensuring high availability
   selector:
     matchLabels:
       app: accounts
-  strategy: {}
   template:
     metadata:
       labels:
         app: accounts
     spec:
       containers:
-      - image: us.icr.io/sn-labs-ipsit13/accounts:1
-        name: accounts
-        resources: {}
+      - name: accounts
+        image: us.icr.io/sn-labs-ipsit13/accounts:1
+        ports:
+        - containerPort: 8080
         env:
-          - name: DATABASE_HOST
-            value: postgresql
-          - name: DATABASE_NAME
-            valueFrom:
-              secretKeyRef:
-                name: postgresql
-                key: database-name
-          - name: DATABASE_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: postgresql
-                key: database-password
-          - name: DATABASE_USER
-            valueFrom:
-              secretKeyRef:
-                name: postgresql
-                key: database-user
-status: {}
+        - name: DATABASE_HOST
+          value: postgresql
+        - name: DATABASE_NAME
+          valueFrom:
+            secretKeyRef:
+              name: postgresql
+              key: database-name
+        - name: DATABASE_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgresql
+              key: database-user
+        - name: DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgresql
+              key: database-password
+        - name: DATABASE_URI
+          value: "postgresql://$(DATABASE_USER):$(DATABASE_PASSWORD)@$(DATABASE_HOST):5432/$(DATABASE_NAME)"
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "250m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 3
+          periodSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 3
+          periodSeconds: 5
